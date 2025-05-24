@@ -3,17 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI 로또 분석기</title>
+  <title>모바일 로또 분석기</title>
   <style>
     body {
       font-family: 'Noto Sans KR', sans-serif;
       margin: 0;
       padding: 20px;
       background: #f0f2f5;
-    }
-    h1 {
-      text-align: center;
-      color: #2f3640;
     }
     .container {
       max-width: 480px;
@@ -37,17 +33,28 @@
     button:hover {
       background: #1c75d8;
     }
-    .output {
-      margin-top: 20px;
-      font-size: 15px;
+    .combo-block {
+      background: #f8f9fa;
+      padding: 12px;
+      margin-top: 12px;
+      border-left: 4px solid #2d8cf0;
+      border-radius: 8px;
+    }
+    .combo-title {
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+    .combo-detail {
+      color: #555;
+      font-size: 14px;
+      line-height: 1.5;
     }
   </style>
 </head>
 <body>
-  <h1>📱 AI 로또 전략 생성기</h1>
+  <h2 style="text-align:center;">📱 AI 로또 분석기</h2>
   <div class="container">
-    <p><strong>기반 회차:</strong> 제1173회 (1, 5, 18, 20, 30, 35)</p>
-
     <label><input type="checkbox" id="useHighFreq" checked> 고빈도 번호 기반</label>
     <label><input type="checkbox" id="useTop4thPlus" checked> 4등 이상 당첨 번호 기반</label>
     <label><input type="checkbox" id="preferUnseenZone" checked> 안 나온 구간 우선</label>
@@ -70,10 +77,7 @@
     };
 
     const highFreq = [5, 6, 7, 10, 17, 27, 28, 30, 33, 34, 40, 43, 44];
-    const top4thPlus = [
-      2, 5, 6, 9, 10, 12, 17, 19, 23, 25,
-      27, 28, 30, 33, 34, 38, 40, 41, 43, 44
-    ];
+    const top4thPlus = [2, 5, 6, 9, 10, 12, 17, 19, 23, 25, 27, 28, 30, 33, 34, 38, 40, 41, 43, 44];
 
     const activeZones = new Set();
     const unseenZones = new Set([1, 2, 3, 4, 5]);
@@ -139,14 +143,20 @@
     }
 
     function generateMultiple(count) {
-      const output = [];
+      const result = [];
       for (let i = 0; i < count; i++) {
-        const numbers = generateNumber();
-        const rank = checkRank(numbers);
-        const type = comboType(numbers);
-        output.push(`<p>조합 ${i+1}: <strong>${numbers.join(', ')}</strong> → ${type} / ${rank}</p>`);
+        const combo = generateNumber();
+        const rank = checkRank(combo);
+        const type = comboType(combo);
+
+        result.push(`
+          <div class="combo-block">
+            <div class="combo-title">조합 ${i+1}: [${combo.join(', ')}]</div>
+            <div class="combo-detail">📊 분석: ${type}<br>${rank}</div>
+          </div>
+        `);
       }
-      document.getElementById('result').innerHTML = output.join('');
+      document.getElementById('result').innerHTML = result.join('');
     }
   </script>
 </body>
