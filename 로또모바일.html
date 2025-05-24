@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI 로또 분석기</title>
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f0f2f5;
+    }
+    h1 {
+      text-align: center;
+      color: #2f3640;
+    }
+    .container {
+      max-width: 480px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    label { display: block; margin: 10px 0; }
+    button {
+      margin: 8px 4px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #2d8cf0;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1c75d8;
+    }
+    .output {
+      margin-top: 20px;
+      font-size: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📱 AI 로또 전략 생성기</h1>
+  <div class="container">
+    <p><strong>기반 회차:</strong> 제1173회 (1, 5, 18, 20, 30, 35)</p>
+
+    <label><input type="checkbox" id="useHighFreq" checked> 고빈도 번호 기반</label>
+    <label><input type="checkbox" id="useTop4thPlus" checked> 4등 이상 당첨 번호 기반</label>
+    <label><input type="checkbox" id="preferUnseenZone" checked> 안 나온 구간 우선</label>
+    <label><input type="checkbox" id="includePrevZones"> 지난 회차 구간도 포함</label>
+
+    <button onclick="generateMultiple(5)">5세트 추천</button>
+    <button onclick="generateMultiple(10)">10세트 추천</button>
+
+    <div class="output" id="result"></div>
+  </div>
+
+  <script>
+    const prevWinning = [1, 5, 18, 20, 30, 35];
+    const zones = {
+      1: [1,2,3,4,5,6,7,8,9,10],
+      2: [11,12,13,14,15,16,17,18,19,20],
+      3: [21,22,23,24,25,26,27,28,29,30],
+      4: [31,32,33,34,35,36,37,38,39,40],
+      5: [41,42,43,44,45]
+    };
+
+    const highFreq = [5, 6, 7, 10, 17, 27, 28, 30, 33, 34, 40, 43, 44];
+    const top4thPlus = [
+      2, 5, 6, 9, 10, 12, 17, 19, 23, 25,
+      27, 28, 30, 33, 34, 38, 40, 41, 43, 44
+    ];
+
+    const activeZones = new Set();
+    const unseenZones = new Set([1, 2, 3, 4, 5]);
+    for (const z in zones) {
+      if (zones[z].some(n => prevWinning.includes(n))) {
+        activeZones.add(Number(z));
+        unseenZones.delete(Number(z));
+      }
+    }
+
+    const pastTopCombos = [
+      [2, 8, 23, 28, 34, 45],
+      [5, 10, 21, 27, 34, 40],
+      [1, 9, 13, 27, 30, 41],
+      [6, 14, 22, 26, 35, 44],
+      [5, 9, 14, 28, 33, 44],
+      [7, 12, 17, 23, 30, 40],
+      [2, 6, 20, 28, 34, 44],
+      [3, 10, 11, 24, 33, 43],
+    ];
+
+    function generateNumber() {
+      const useHigh = document.getElementById('useHighFreq').checked;
+      const useTop = document.getElementById('useTop4thPlus').checked;
+      const unseenOnly = document.getElementById('preferUnseenZone').checked;
+      const includePrev = document.getElementById('includePrevZones').checked;
+
+      let pool = [];
+
+      if (useHigh) pool = [...highFreq];
+      if (useTop) pool = [...new Set([...pool, ...top4thPlus])];
+      if (unseenOnly) unseenZones.forEach(z => pool.push(...zones[z]));
+      if (includePrev) activeZones.forEach(z => pool.push(...zones[z]));
+
+      if (pool.length < 15) pool = Array.from({ length: 45 }, (_, i) => i + 1);
+      pool = [...new Set(pool)];
+
+      const shuffled = pool.sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, 6).sort((a, b) => a - b);
+    }
+
+    function checkRank(combo) {
+      for (const past of pastTopCombos) {
+        const match = past.filter(n => combo.includes(n)).length;
+        if (match === 6) return '🥇 1등 당첨조합';
+        if (match === 5) return '🥉 3~4등 근접';
+        if (match === 4) return '✅ 4등 포함 가능';
+      }
+      return '🆕 신규 조합';
+    }
+
+    function comboType(combo) {
+      const zoneHits = {1:0,2:0,3:0,4:0,5:0};
+      for (const n of combo) {
+        for (const z in zones) {
+          if (zones[z].includes(n)) zoneHits[z]++;
+        }
+      }
+      const maxZone = Object.entries(zoneHits).sort((a,b)=>b[1]-a[1])[0];
+      if (maxZone[1] >= 3) return `⚠️ ${maxZone[0]}구간 집중`;
+      if (combo.some((n,i,arr)=>arr[i-1]&&n-arr[i-1]===1)) return '↔️ 연속수 포함';
+      return '✅ 균형형';
+    }
+
+    function generateMultiple(count) {
+      const output = [];
+      for (let i = 0; i < count; i++) {
+        const numbers = generateNumber();
+        const rank = checkRank(numbers);
+        const type = comboType(numbers);
+        output.push(`<p>조합 ${i+1}: <strong>${numbers.join(', ')}</strong> → ${type} / ${rank}</p>`);
+      }
+      document.getElementById('result').innerHTML = output.join('');
+    }
+  </script>
+</body>
+</html>
